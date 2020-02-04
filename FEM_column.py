@@ -99,42 +99,123 @@ def profile(Z, Tav=3, Cat=2):
 # 2. Assembling the stiffness matrix
 #-----------------------------------------------------------------------------
 
-def stiffness(L, EI):
+def stiffness(L, EI, P=None):
+    ''' Global stiffness matrix for a discretized column.
+        All input parameters are numpy vectors, one element per 
+        column discretization element.
+        
+        L:   lengths
+        EI:  stifnesses
+        P:   axial loading (negative for compression)
+    '''
 
+# Preliminary settings
+    
     N   =  len(L) + 1
     KG  =  np.zeros((2*N,2*N))
-    
-    k11 = 12*EI/L/L/L;
-    k12 =  6*EI/L/L;
-    k22 =  4*EI/L;
 
+    ke11 = 12*EI/L/L/L
+    ke12 =  6*EI/L/L
+    ke22 =  4*EI/L
+
+    if (P != None):
+        kg11 = 36*P/30/L
+        kg12 =  3*P/30
+        kg22 =  4*P*L/30
+
+# Iterate for all discretization elements
+        
     for k in range(N-1):
     
-        i1   = 2* k;         #0
-        i2   = 2* k + 1;     #1
-        i3   = 2*(k+1);      #2
-        i4   = 2*(k+1) + 1;  #3
+        i1 = 2* k           #0
+        i2 = 2* k + 1       #1
+        i3 = 2*(k + 1)      #2
+        i4 = 2*(k + 1) + 1  #3
+
+# Linear elastic stifness matrix
     
-        k11k = k11[k];
-        k12k = k12[k];
-        k22k = k22[k];
+        k11k = ke11[k]
+        k12k = ke12[k]
+        k22k = ke22[k]
         
-        KG[i1,i1] = KG[i1,i1] + k11k;
-        KG[i1,i2] = KG[i1,i2] + k12k;    KG[i2,i1] = KG[i2,i1] + k12k;
-        KG[i1,i3] = KG[i1,i3] - k11k;    KG[i3,i1] = KG[i3,i1] - k11k; 
-        KG[i1,i4] = KG[i1,i4] + k12k;    KG[i4,i1] = KG[i4,i1] + k12k; 
+        KG[i1,i1] += k11k
+        KG[i1,i2] += k12k;    KG[i2,i1] += k12k
+        KG[i1,i3] -= k11k;    KG[i3,i1] -= k11k
+        KG[i1,i4] += k12k;    KG[i4,i1] += k12k
         
-        KG[i2,i2] = KG[i2,i2] + k22k;
-        KG[i2,i3] = KG[i2,i3] - k12k;    KG[i3,i2] = KG[i3,i2] - k12k;
-        KG[i2,i4] = KG[i2,i4] + k22k/2;  KG[i4,i2] = KG[i4,i2] + k22k/2;
+        KG[i2,i2] += k22k;
+        KG[i2,i3] -= k12k;    KG[i3,i2] -= k12k
+        KG[i2,i4] += k22k/2;  KG[i4,i2] -= k22k/2
         
-        KG[i3,i3] = KG[i3,i3] + k11k;    
-        KG[i3,i4] = KG[i3,i4] - k12k;    KG[i4,i3] = KG[i4,i3] - k12k;
-        KG[i4,i4] = KG[i4,i4] + k22k;
-     
+        KG[i3,i3] += k11k
+        KG[i3,i4] -= k12k;    KG[i4,i3] -= k12k
+        KG[i4,i4] += k22k
+
+# Linear elastic stifness matrix
+
+        if (P != None):    
+            k11k = kg11[k]
+            k12k = kg12[k]
+            k22k = kg22[k]
+            
+            KG[i1,i1] += k11k
+            KG[i1,i2] += k12k;    KG[i2,i1] += k12k
+            KG[i1,i3] -= k11k;    KG[i3,i1] -= k11k
+            KG[i1,i4] += k12k;    KG[i4,i1] += k12k
+            
+            KG[i2,i2] += k22k
+            KG[i2,i3] -= k12k;    KG[i3,i2] -= k12k
+            KG[i2,i4] -= k22k/4;  KG[i4,i2] -= k22k/4
+            
+            KG[i3,i3] += k11k
+            KG[i3,i4] -= k12k;    KG[i4,i3] -= k12k
+            KG[i4,i4] += k22k
+
     return KG
 
 #=============================================================================
-# 3. 
+# 3. Assembling consistent mass matrix
 #-----------------------------------------------------------------------------
- 
+
+def consistMass(L, mu):
+    ''' Global consistent mass matrix for a discretized column.
+        All input parameters are numpy vectors, one element per 
+        column discretization element.
+        
+        L:   lengths
+        mu:  mass per unit lengths
+    '''
+
+# Preliminary settings
+
+    N   =  len(L) + 1
+    MG  =  np.zeros((2*N,2*N))
+    
+    m11 = 156*mu*L    /420
+    m12 =  22*mu*L*L  /420
+    m13 =  54*mu*L    /420
+    m14 =  13*mu*L*L  /420
+    m22 =   4*mu*L*L*L/420
+    m24 =   3*mu*L*L*L/420
+
+# Iterate for all discretization elements
+        
+    for k in range(N-1):
+    
+        i1 = 2* k           #0
+        i2 = 2* k + 1       #1
+        i3 = 2*(k + 1)      #2
+        i4 = 2*(k + 1) + 1  #3
+
+        MG[i1,i1] += m11
+        MG[i1,i2] += m12;    MG[i2,i1] += m12
+        MG[i1,i3] += m13;    MG[i3,i1] += m13
+        MG[i1,i4] -= m14;    MG[i4,i1] -= m14
+        MG[i2,i2] += m22;
+        MG[i2,i3] += m14;    MG[i3,i2] += m14
+        MG[i2,i4] -= m24;    MG[i4,i2] -= m24
+        MG[i3,i3] += m11;    
+        MG[i3,i4] -= m12;    MG[i4,i3] -= m12
+        MG[i4,i4] -= m22
+     
+    return MG
