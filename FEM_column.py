@@ -119,8 +119,8 @@ def stiffness(L, EI, P=None):
     ke22 =  4*EI/L
 
     if (P != None):
-        kg11 = 36*P/30/L
-        kg12 =  3*P/30
+        kg11 = 36*P/L/30
+        kg12 =  3*P*L/L/30
         kg22 =  4*P*L/30
 
 # Iterate for all discretization elements
@@ -206,16 +206,23 @@ def consistMass(L, mu):
         i2 = 2* k + 1       #1
         i3 = 2*(k + 1)      #2
         i4 = 2*(k + 1) + 1  #3
-
-        MG[i1,i1] += m11
-        MG[i1,i2] += m12;    MG[i2,i1] += m12
-        MG[i1,i3] += m13;    MG[i3,i1] += m13
-        MG[i1,i4] -= m14;    MG[i4,i1] -= m14
-        MG[i2,i2] += m22;
-        MG[i2,i3] += m14;    MG[i3,i2] += m14
-        MG[i2,i4] -= m24;    MG[i4,i2] -= m24
-        MG[i3,i3] += m11;    
-        MG[i3,i4] -= m12;    MG[i4,i3] -= m12
-        MG[i4,i4] -= m22
+    
+        m11k = m11[k]
+        m12k = m12[k]
+        m13k = m13[k]
+        m14k = m14[k]
+        m22k = m22[k]
+        m24k = m24[k]
+ 
+        MG[i1,i1] += m11k
+        MG[i1,i2] += m12k;    MG[i2,i1] += m12k
+        MG[i1,i3] += m13k;    MG[i3,i1] += m13k
+        MG[i1,i4] -= m14k;    MG[i4,i1] -= m14k
+        MG[i2,i2] += m22k;
+        MG[i2,i3] += m14k;    MG[i3,i2] += m14k
+        MG[i2,i4] -= m24k;    MG[i4,i2] -= m24k
+        MG[i3,i3] += m11k;    
+        MG[i3,i4] -= m12k;    MG[i4,i3] -= m12k
+        MG[i4,i4] -= m22k
      
     return MG
