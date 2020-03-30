@@ -2,6 +2,7 @@
 
 import sys
 import numpy as np
+import scipy.linalg as sc
 
 #=============================================================================
 # 1. Assembling the stiffness matrix, with option for 2nd order effect
@@ -27,7 +28,7 @@ def stiffness(L, EI, P=None):
     ke22 =  4*EI/L
     ke24 =  2*EI/L
 
-    if (P != None):
+    if (P is None):
         kg11 = 36*P/L/30
         kg12 =  3*P  /30*np.ones(L.shape)
         kg22 =  4*P*L/30
@@ -64,7 +65,7 @@ def stiffness(L, EI, P=None):
 
 # Linear elastic stifness matrix
 
-        if (P != None):    
+        if (P is None):    
             k11k = kg11[k] # 36
             k12k = kg12[k] # 3L
             k22k = kg22[k] # 4L^2
@@ -140,5 +141,30 @@ def consistMass(L, mu):
         MG[i4,i4] += m22k
      
     return MG
+
+#=============================================================================
+# 3. Complete case analysis
+#-----------------------------------------------------------------------------
+
+def analyseCase(H, EI, mu, P1, n):
+
+    L = (H/n)*np.ones(n)
+    P =  P1 + np.cumsum(L*mu)
+    
+    K =  stiffness(L, EI, P)
+    M =  consistMass(L, mu)
+
+    K       =  K[:-2,:-2]
+    M       =  M[:-2,:-2]
+    M[0,0] +=  P1/9.81
+
+    w2, Phi = sc.eig(K, M)
+    iw      = w2.argsort()
+    w2      = w2[iw]
+    Phi     = Phi[:,iw]
+    wk      = np.sqrt(np.real(w2)) 
+    fk      = wk/2/np.pi
+    
+    return fk[0]
 
 #=============================================================================
