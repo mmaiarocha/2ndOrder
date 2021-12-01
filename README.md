@@ -1,5 +1,4 @@
-# Jornadas_2020
-XXXIX - Jornadas Sudamericanas de Ingenieria Estructural
+# Second Order Effects
 
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/mmaiarocha/Jornadas_2020/master)
 
